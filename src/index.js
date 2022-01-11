@@ -2,6 +2,7 @@ import './css/styles.css';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
+import InfiniteScroll from 'infinite-scroll';
 
 const axios = require('axios').default;
 
@@ -12,6 +13,14 @@ const PER_PAGE = 40;
 let page = 1;
 let inputValue = '';
 let gallerySimpleLightbox = '';
+
+const infScroll = new InfiniteScroll('.gallery', {
+  responseType: 'text',
+  history: false,
+  path() {
+    return `${API_URL}?key=${API_KEY}&q=${name}&image_type=photo$orientation=horizontal&safesearch=true&per_page=${PER_PAGE}&page=${page}`;
+  },
+});
 
 const refs = {
   form: document.querySelector('.search-form'),
@@ -34,10 +43,13 @@ function onFormSubmit(e) {
   resetPageNumber();
 
   fetchImg(inputValue);
+  infScroll.loadNextPage();
+  enableIntersectionObserver();
 }
 
 function onBtnLoadClick() {
   page += 1;
+  console.log('hello');
   fetchImgOnClickLoadBtn(inputValue);
 }
 
@@ -59,8 +71,8 @@ async function fetchImgOnClickLoadBtn(name) {
       `${API_URL}?key=${API_KEY}&q=${name}&image_type=photo$orientation=horizontal&safesearch=true&per_page=${PER_PAGE}&page=${page}`,
     );
     if (PER_PAGE > response.data.hits.length) {
-      refs.loadBtn.classList.remove('load-more');
-      refs.loadBtn.classList.add('hiden');
+      // refs.loadBtn.classList.remove('load-more'); // для реалізації через кнопку loadmore
+      // refs.loadBtn.classList.add('hiden'); // для реалізації через кнопку loadmore
       Notify.failure("We're sorry, but you've reached the end of search results.");
     }
     renderImgCards(response.data.hits);
@@ -101,20 +113,20 @@ function resetPageNumber() {
 
 function buildGelary(d) {
   if (d.hits.length < 1) {
-    refs.loadBtn.classList.remove('load-more');
-    refs.loadBtn.classList.add('hiden');
+    // refs.loadBtn.classList.remove('load-more'); // для реалізації через кнопку loadmore
+    // refs.loadBtn.classList.add('hiden'); // для реалізації через кнопку loadmore
     return Notify.failure(
       'Sorry, there are no images matching your search query. Please try again.',
     );
   } else if (PER_PAGE > d.hits.length) {
-    refs.loadBtn.classList.remove('load-more');
-    refs.loadBtn.classList.add('hiden');
+    // refs.loadBtn.classList.remove('load-more'); // для реалізації через кнопку loadmore
+    // refs.loadBtn.classList.add('hiden'); // для реалізації через кнопку loadmore
     Notify.failure("We're sorry, but you've reached the end of search results.");
     return renderImgCards(d.hits);
   }
   renderImgCards(d.hits);
-  refs.loadBtn.classList.remove('hiden');
-  refs.loadBtn.classList.add('load-more');
+  // refs.loadBtn.classList.remove('hiden'); // для реалізації через кнопку loadmore
+  // refs.loadBtn.classList.add('load-more'); // для реалізації через кнопку loadmore
   Notify.success(`Hooray! We found ${d.totalHits} images.`);
   scroll();
 }
@@ -132,3 +144,19 @@ function scroll() {
 
 refs.form.addEventListener('submit', onFormSubmit);
 refs.loadBtn.addEventListener('click', onBtnLoadClick);
+
+function enableIntersectionObserver() {
+  const options = {
+    root: document.querySelector('.gallery_list'),
+    threshold: 1,
+  };
+  const handleObserver = ([item]) => {
+    console.log(item);
+    if (item.isIntersecting) {
+      onBtnLoadClick();
+    }
+  };
+  const observer = new IntersectionObserver(handleObserver, options);
+
+  observer.observe(refs.loadBtn);
+}

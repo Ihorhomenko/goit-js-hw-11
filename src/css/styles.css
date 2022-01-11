@@ -48,7 +48,8 @@ body {
 }
 
 .hiden {
-  display: none;
+  /* display: block;  */ /*для реалізації через кнопку loadmore */
+  visibility: hidden;
 }
 
 .gallery {
